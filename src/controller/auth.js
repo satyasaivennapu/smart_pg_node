@@ -1,0 +1,629 @@
+import db from '../middleware/db.config.js';
+
+export async function authenticate(req, res) {
+  try {
+    const {
+      email,
+      password,
+      tenantId,
+      branchId
+    } = req.body;
+
+    if (!email || !password || !tenantId || !branchId) {
+      return res.status(400).json({
+        success: false,
+        message: "email, password, tenantId and branchId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      'CALL smart_pg.sp_user_login(?,?,?,?)',
+      [email, password, tenantId, branchId]
+    );
+
+    const user = rows?.[0]?.[0];
+
+    return res.json({
+      success: true,
+      result: user
+    });
+
+  } catch (err) {
+    console.error('DB Error:', err);
+
+    /* ---------- SIGNAL error from MySQL ---------- */
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(401).json({
+        success: false,
+        message: err.message   // USER_NOT_EXISTS / INVALID_PASSWORD / USER_INACTIVE_OR_EXPIRED
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+
+export async function users(req, res) {
+  try {
+    const {
+      id = null,
+      crudType,
+      name = null,
+      mobileNo = null,
+      email = null,
+      password = null,
+      tenantId = null,
+      branchId = null,
+      userTypeId = null, // role_id
+      isActive = null,
+      userId = null     // logged-in user
+    } = req.body;
+
+    console.log("users req.body", req.body);
+
+    if (!crudType) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required field: crudType"
+      });
+    }
+
+    const params = [
+      crudType,     // p_action
+      id,           // p_id
+      name,         // p_name
+      mobileNo,     // p_phone_no
+      email,        // p_email
+      password,     // p_password (hashed)
+      tenantId,     // p_tenant_id
+      branchId,     // p_branch_id
+      userTypeId,   // p_role_id
+      isActive,     // p_is_active
+      userId        // p_user_id
+    ];
+
+    const [rows] = await db.query(
+      'CALL smart_pg.sp_process_user(?,?,?,?,?,?,?,?,?,?,?)',
+      params
+    );
+
+    const resultSet = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result: resultSet
+    });
+
+  } catch (err) {
+    console.error('DB Error:', err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+
+export async function tenants(req, res) {
+  try {
+    const {
+      id = null,
+      crudType,
+      name = null,
+      code = null,
+      email = null,
+      mobileNo = null,
+      expiryFrom = null,
+      expiryTo = null,
+      isActive = null,
+      userId = null
+    } = req.body;
+
+    console.log("tenant req.body", req.body);
+
+    if (!crudType) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required field: crudType"
+      });
+    }
+
+    const params = [
+      crudType,     // p_action
+      id,           // p_id
+      name,         // p_name
+      code,         // p_code
+      email,        // p_email
+      mobileNo,     // p_mobile_no
+      expiryFrom,   // p_expired_from
+      expiryTo,     // p_expired_to
+      isActive,     // p_is_active
+      userId        // p_user_id
+    ];
+
+    const [rows] = await db.query(
+      'CALL smart_pg.sp_process_tenant(?,?,?,?,?,?,?,?,?,?)',
+      params
+    );
+
+    /* ---------- Normalize response ---------- */
+    const resultSet = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result: resultSet
+    });
+
+  } catch (err) {
+    console.error('DB Error:', err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function branch(req, res) {
+  try {
+    const {
+      id = null,
+      crudType,
+      name = null,
+      code = null,
+      tenantId = null,
+      noOfFloors = null,
+      agreementFrom = null,
+      agreementTo = null,
+      isActive = null,
+      userId = null
+    } = req.body;
+
+    console.log("branch req.body", req.body);
+
+    if (!crudType) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required field: crudType"
+      });
+    }
+
+    const params = [
+      crudType,        // p_action
+      id,              // p_id
+      name,            // p_name
+      code,            // p_code
+      tenantId,        // p_tenant_id
+      noOfFloors,      // p_no_of_floors
+      agreementFrom,   // p_agreement_from
+      agreementTo,     // p_agreement_to
+      isActive,        // p_is_active
+      userId           // p_user_id
+    ];
+
+    const [rows] = await db.query(
+      'CALL smart_pg.sp_process_branch(?,?,?,?,?,?,?,?,?,?)',
+      params
+    );
+
+    const resultSet = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result: resultSet
+    });
+
+  } catch (err) {
+    console.error('DB Error:', err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function processCheckIn(req, res) {
+  try {
+    const {
+      tenantId,
+      branchId,
+      roomId,
+      roomsDetailId,
+      occupantName,
+      occupantPhoneNo,
+      occupantProofType,
+      occupantProofNo,
+      occupantProofImg,
+      checkInDate,
+      depositAmount,
+      refundAmount,
+      monthlyAmount,
+      paymentMode,
+      userId
+    } = req.body;
+
+    console.log("PG Check-in req.body:", req.body);
+
+    /* ---------- Required field validation ---------- */
+    if (
+      !tenantId ||
+      !branchId ||
+      !roomId ||
+      !roomsDetailId ||
+      !occupantName ||
+      !occupantPhoneNo ||
+      !checkInDate ||
+      !monthlyAmount ||
+      !userId
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_checkin(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        tenantId,              // p_tenant_id
+        branchId,              // p_branch_id
+        roomId,                // p_room_id
+        roomsDetailId,         // p_rooms_detail_id
+        occupantName,          // p_occupant_name
+        occupantPhoneNo,       // p_occupant_contact_no
+        occupantProofType,     // p_occupant_proof_type
+        occupantProofNo,       // p_occupant_proof_no
+        occupantProofImg,      // p_occupant_proof_img
+        checkInDate,           // p_check_in_date
+        depositAmount || 0,    // p_deposit_amount
+        refundAmount || 0,     // p_refund_amount
+        monthlyAmount,         // p_monthly_amount
+        paymentMode || 'CASH', // p_payment_mode
+        userId                 // p_created_by
+      ]
+    );
+
+    const result = rows?.[0]?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    /* ---------- SIGNAL handling ---------- */
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function processPgCheckOut(req, res) {
+  try {
+    const {
+      bookingId,
+      checkOutDate,
+      userId
+    } = req.body;
+
+    console.log("processPgCheckOut req.body:", req.body);
+
+    if (!bookingId || !checkOutDate || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "bookingId, checkOutDate and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_vacate(?,?,?)`,
+      [
+        bookingId,      // p_booking_id
+        checkOutDate,   // p_checkout_date
+        userId          // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0]?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function addMonthlyPayment(req, res) {
+  try {
+    const {
+      bookingId,
+      monthlyAmount,
+      paymentMode,
+      userId
+    } = req.body;
+
+    console.log("addMonthlyPayment req.body:", req.body);
+
+    if (!bookingId || !monthlyAmount || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "bookingId, monthlyAmount and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_add_monthly_payment(?,?,?,?)`,
+      [
+        bookingId,          // p_booking_id
+        monthlyAmount,      // p_monthly_amount
+        paymentMode || 'CASH', // p_payment_mode
+        userId              // p_created_by
+      ]
+    );
+
+    const result = rows?.[0]?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function createBranchRooms(req, res) {
+  try {
+    const {
+      tenantId,
+      branchId,
+      floors,           // JSON array
+      bedAvailability,
+      userId
+    } = req.body;
+
+    console.log("createBranchRooms req.body:", req.body);
+
+    if (!tenantId || !branchId || !floors || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "tenantId, branchId, floors and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_create_branch_rooms(?,?,?,?,?)`,
+      [
+        tenantId,                     // p_tenant_id
+        branchId,                     // p_branch_id
+        JSON.stringify(floors),       // p_floors_json
+        bedAvailability || 1,         // p_bed_availability
+        userId                        // p_user_id
+      ]
+    );
+
+    const result = rows?.[0]?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function getPaymentReceipt(req, res) {
+  try {
+    const { paymentId } = req.body;
+
+    if (!paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "paymentId is required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_payment_receipt(?)`,
+      [paymentId]
+    );
+
+    const result = rows?.[0]?.[0] || null;
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getCheckoutReport(req, res) {
+  try {
+    const {
+      tenantId,
+      branchId,
+      fromDate,
+      toDate
+    } = req.body;
+
+    if (!tenantId || !branchId || !fromDate || !toDate) {
+      return res.status(400).json({
+        success: false,
+        message: "tenantId, branchId, fromDate and toDate are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_checkout_report(?,?,?,?)`,
+      [
+        tenantId,
+        branchId,
+        fromDate,
+        toDate
+      ]
+    );
+
+    const result = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getCheckinReport(req, res) {
+  try {
+    const {
+      tenantId,
+      branchId,
+      fromDate,
+      toDate
+    } = req.body;
+
+    if (!tenantId || !branchId || !fromDate || !toDate) {
+      return res.status(400).json({
+        success: false,
+        message: "tenantId, branchId, fromDate and toDate are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_checkin_report(?,?,?,?)`,
+      [
+        tenantId,
+        branchId,
+        fromDate,
+        toDate
+      ]
+    );
+
+    const result = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getPaymentHistory(req, res) {
+  try {
+    const {
+      tenantId,
+      branchId,
+      bookingId = null
+    } = req.body;
+
+    if (!tenantId || !branchId) {
+      return res.status(400).json({
+        success: false,
+        message: "tenantId and branchId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_payment_history(?,?,?)`,
+      [
+        tenantId,
+        branchId,
+        bookingId
+      ]
+    );
+
+    const result = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
