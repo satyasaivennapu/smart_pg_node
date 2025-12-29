@@ -827,3 +827,151 @@ export async function getAvailbleBeds(req, res) {
     });
   }
 }
+
+export async function getDashboard(req, res) {
+  try {
+    const { tenantId, branchId } = req.body;
+
+    if (!tenantId || !branchId) {
+      return res.status(400).json({
+        success: false,
+        message: "tenantId and branchId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_dashboard_totals(?, ?)`,
+      [tenantId, branchId]
+    );
+
+    /*
+      rows[0][0] → room summary
+      rows[1][0] → finance summary
+    */
+
+    const roomSummary = rows?.[0]?.[0] || {};
+    const financeSummary = rows?.[1]?.[0] || {};
+
+    const paidToday = Number(financeSummary.paid_today || 0);
+    const expectedToday = Number(financeSummary.expected_today || 0);
+    const paidDueToday = Number(financeSummary.paid_due_today || 0);
+
+    const pendingToday = Math.max(expectedToday - paidDueToday, 0);
+
+    return res.json({
+      success: true,
+      dashboard: {
+        rooms: roomSummary,
+        finance: {
+          paid_today: paidToday,
+          expected_today: expectedToday,
+          paid_due_today: paidDueToday,
+          pending_today: pendingToday
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function getOccupantDues(req, res) {
+  try {
+    const {
+      tenantId,
+      branchId
+    } = req.body;
+
+    console.log("sp_pg_user_pending_today req.body:", req.body);
+
+    if (!branchId || !tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: "branchId and tenantId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_user_pending_today(?,?)`,
+      [
+        tenantId,
+        branchId       // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getNextSevenDaysDues(req, res) {
+  try {
+    const {
+      tenantId,
+      branchId
+    } = req.body;
+
+    console.log("sp_pg_next_7_days_pending req.body:", req.body);
+
+    if (!branchId || !tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: "branchId and tenantId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_next_7_days_pending(?,?)`,
+      [
+        tenantId,
+        branchId       // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}

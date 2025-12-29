@@ -22,6 +22,9 @@ router.post('/getBranchFloors',auth.getBranchFloors);
 router.post('/getBranchRoomTypes',auth.getBranchRoomTypes);
 router.post('/getBranchRoomCapacity',auth.getBranchRoomCapacity);
 router.post('/getAvailbleBeds',auth.getAvailbleBeds);
+router.post('/getDashboard',auth.getDashboard);
+router.post('/getOccupantDues',auth.getOccupantDues);
+router.post('/getNextSevenDaysDues',auth.getNextSevenDaysDues);
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'src/assets/img');
