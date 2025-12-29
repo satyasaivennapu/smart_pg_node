@@ -3,22 +3,20 @@ import db from '../middleware/db.config.js';
 export async function authenticate(req, res) {
   try {
     const {
-      email,
-      password,
-      tenantId,
-      branchId
+      userName,
+      password
     } = req.body;
 
-    if (!email || !password || !tenantId || !branchId) {
+    if (!userName || !password ) {
       return res.status(400).json({
         success: false,
-        message: "email, password, tenantId and branchId are required"
+        message: "user Name, password are required"
       });
     }
 
     const [rows] = await db.query(
-      'CALL smart_pg.sp_user_login(?,?,?,?)',
-      [email, password, tenantId, branchId]
+      'CALL smart_pg.sp_user_login(?,?)',
+      [userName, password]
     );
 
     const user = rows?.[0]?.[0];
@@ -239,7 +237,9 @@ export async function processCheckIn(req, res) {
       occupantPhoneNo,
       occupantProofType,
       occupantProofNo,
-      occupantProofImg,
+      occupantImg,
+      occupantProofFrontImg,
+      occupantProofBackImg,
       checkInDate,
       depositAmount,
       refundAmount,
@@ -269,7 +269,7 @@ export async function processCheckIn(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_checkin(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `CALL smart_pg.sp_pg_checkin(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         tenantId,              // p_tenant_id
         branchId,              // p_branch_id
@@ -279,7 +279,9 @@ export async function processCheckIn(req, res) {
         occupantPhoneNo,       // p_occupant_contact_no
         occupantProofType,     // p_occupant_proof_type
         occupantProofNo,       // p_occupant_proof_no
-        occupantProofImg,      // p_occupant_proof_img
+        occupantImg,      // p_occupant_proof_img
+        occupantProofFrontImg,      // p_occupant_proof_img
+        occupantProofBackImg,      // p_occupant_proof_img
         checkInDate,           // p_check_in_date
         depositAmount || 0,    // p_deposit_amount
         refundAmount || 0,     // p_refund_amount
@@ -627,3 +629,201 @@ export async function getPaymentHistory(req, res) {
   }
 }
 
+export async function getBranchFloors(req, res) {
+  try {
+    const {
+      branchId,
+      userId
+    } = req.body;
+
+    console.log("sp_get_floors_by_branch req.body:", req.body);
+
+    if (!branchId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "branchId and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_get_floors_by_branch(?,?)`,
+      [
+        branchId,      // p_booking_id
+        userId          // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getBranchRoomTypes(req, res) {
+  try {
+    const {
+      branchId,
+      floorNo,
+      userId
+    } = req.body;
+
+    console.log("sp_get_floors_by_branch req.body:", req.body);
+
+    if (!branchId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "branchId and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_get_room_types_by_branch(?,?,?)`,
+      [
+        branchId,      // p_booking_id
+        floorNo,
+        userId          // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getBranchRoomCapacity(req, res) {
+  try {
+    const {
+      branchId,
+      floorNo,
+      userId
+    } = req.body;
+
+    console.log("sp_get_room_capacity_by_branch req.body:", req.body);
+
+    if (!branchId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "branchId and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_get_room_capacity_by_branch(?,?,?)`,
+      [
+        branchId,      // p_booking_id
+        floorNo,
+        userId          // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getAvailbleBeds(req, res) {
+  try {
+    const {
+      branchId,
+      floorNo,
+      roomType,
+      roomCapacity,
+      userId
+    } = req.body;
+
+    console.log("sp_get_rooms_by_branch_floor req.body:", req.body);
+
+    if (!branchId || !floorNo|| !roomType|| !roomCapacity|| !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "branchId,floorNo,roomType ,roomCapacity and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_get_rooms_by_branch_floor(?,?,?,?,?)`,
+      [
+        branchId,      // p_booking_id
+      floorNo,
+      roomType,
+      roomCapacity,
+      userId         // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}

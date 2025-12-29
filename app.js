@@ -1,18 +1,32 @@
 import express from 'express';
-const app=express();
-import router from './src/router.js';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const PORT= process.env.port || 3000;
+import router from './src/router.js';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+/* ✅ FIX: define __dirname in ES module */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/* CORS */
 app.use(cors({
-  origin: 'http://localhost:4200',  // Angular app
+  origin: 'http://localhost:4200',
   methods: 'GET,POST,PUT,DELETE,OPTIONS',
   allowedHeaders: 'Content-Type, Authorization, x-channel-token'
 }));
-// Middleware to parse JSON
+
+/* ✅ Serve static images */
+app.use('/assets', express.static(path.join(__dirname, 'src/assets')));
+
+/* Middleware */
 app.use(express.json());
 app.use('/api', router);
 
-app.listen(PORT,()=>{
- console.log(`Server is running on http://localhost:${PORT}`);
+/* Start server */
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
