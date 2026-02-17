@@ -228,6 +228,7 @@ export async function branch(req, res) {
 
 export async function processCheckIn(req, res) {
   try {
+    //img format branchid + _ + roomdetaild +_ + fileName.jpg
     const {
       tenantId,
       branchId,
@@ -245,7 +246,8 @@ export async function processCheckIn(req, res) {
       refundAmount,
       monthlyAmount,
       paymentMode,
-      userId
+      userId,
+      refundEligible
     } = req.body;
 
     console.log("PG Check-in req.body:", req.body);
@@ -269,7 +271,7 @@ export async function processCheckIn(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_checkin(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `CALL smart_pg.sp_pg_checkin(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         tenantId,              // p_tenant_id
         branchId,              // p_branch_id
@@ -287,7 +289,8 @@ export async function processCheckIn(req, res) {
         refundAmount || 0,     // p_refund_amount
         monthlyAmount,         // p_monthly_amount
         paymentMode || 'CASH', // p_payment_mode
-        userId                 // p_created_by
+        userId     ,            // p_created_by
+        refundEligible || 0
       ]
     );
 
@@ -778,13 +781,62 @@ export async function getAvailbleBeds(req, res) {
   try {
     const {
       branchId,
+      roomId,
+      userId
+    } = req.body;
+
+    console.log("sp_get_available_beds_by_room_id req.body:", req.body);
+
+    if (!branchId || !roomId|| !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "branchId,roomId  and userId are required"
+      });
+    }
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_get_available_beds_by_room_id(?,?,?)`,
+      [
+        branchId,      // p_booking_id
+        roomId,
+      userId         // p_updated_by
+      ]
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+export async function getAvailbleRooms(req, res) {
+  try {
+    const {
+      branchId,
       floorNo,
       roomType,
       roomCapacity,
       userId
     } = req.body;
 
-    console.log("sp_get_rooms_by_branch_floor req.body:", req.body);
+    console.log("sp_get_room_no req.body:", req.body);
 
     if (!branchId || !floorNo|| !roomType|| !roomCapacity|| !userId) {
       return res.status(400).json({
@@ -794,7 +846,7 @@ export async function getAvailbleBeds(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_get_rooms_by_branch_floor(?,?,?,?,?)`,
+      `CALL smart_pg.sp_get_room_no(?,?,?,?,?)`,
       [
         branchId,      // p_booking_id
       floorNo,
@@ -827,7 +879,6 @@ export async function getAvailbleBeds(req, res) {
     });
   }
 }
-
 export async function getDashboard(req, res) {
   try {
     const { tenantId, branchId } = req.body;
@@ -838,6 +889,7 @@ export async function getDashboard(req, res) {
         message: "tenantId and branchId are required"
       });
     }
+    console.log("sp_pg_dashboard_totals req.body:", req.body);
 
     const [rows] = await db.query(
       `CALL smart_pg.sp_pg_dashboard_totals(?, ?)`,
@@ -849,24 +901,31 @@ export async function getDashboard(req, res) {
       rows[1][0] → finance summary
     */
 
-    const roomSummary = rows?.[0]?.[0] || {};
-    const financeSummary = rows?.[1]?.[0] || {};
-
+    const roomSummary = rows?.[0] || {};
+    const roomsInfo = rows?.[1] || {};
+    const financeSummary = rows?.[2]?.[0] || {};
+   const expenseSummary=rows?.[3]?.[0] || {};
     const paidToday = Number(financeSummary.paid_today || 0);
     const expectedToday = Number(financeSummary.expected_today || 0);
     const paidDueToday = Number(financeSummary.paid_due_today || 0);
+    const depositAmountToday = Number(financeSummary.deposit_amount || 0);
+    const refundAmountToday = Number(financeSummary.refund_amount || 0);
 
     const pendingToday = Math.max(expectedToday - paidDueToday, 0);
-
+    const todayExpenses=Number(expenseSummary.today_expenses || 0);
     return res.json({
       success: true,
       dashboard: {
         rooms: roomSummary,
+        roomsInfo:roomsInfo,
         finance: {
           paid_today: paidToday,
           expected_today: expectedToday,
           paid_due_today: paidDueToday,
-          pending_today: pendingToday
+          pending_today: pendingToday,
+          deposit_amount_today:depositAmountToday,
+          refund_amount_today:refundAmountToday,
+          today_expenses:todayExpenses
         }
       }
     });
@@ -975,3 +1034,109 @@ export async function getNextSevenDaysDues(req, res) {
     });
   }
 }
+
+export async function getUserRoles(req, res) {
+  try {
+
+    console.log("sp_get_user_roles req.body:", req.body);
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_get_user_roles()`
+    );
+
+    const result = rows?.[0] || {};
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+
+export async function manageExpenses(req, res) {
+  try {
+    const {
+      action,
+      id,
+      name,
+      description,
+      branch_id,
+      amount,
+      paid_date
+    } = req.body;
+
+    const userId = req.user?.id || req.body.user_id; // adjust as per auth
+
+    if (!action) {
+      return res.status(400).json({
+        status: false,
+        message: 'Action is required'
+      });
+    }
+
+    const params = [
+      action,
+      id || null,
+      name || null,
+      description || null,
+      branch_id || null,
+      amount || null,
+      paid_date || null,
+      userId || null
+    ];
+
+    console.log("sp_manage_expenses req.body:", req.body);
+    db.query(
+      'CALL sp_manage_expenses(?,?,?,?,?,?,?,?)',
+      params,
+      (err, result) => {
+        if (err) {
+          console.error('DB Error:', err);
+          return res.status(500).json({
+            status: false,
+            message: 'Database error',
+            error: err.message
+          });
+        }
+
+        /* MySQL returns result sets differently for CALL */
+        let data = [];
+
+        if (action === 'GET') {
+          data = result[0];
+        } else {
+          data = result[0][0];
+        }
+
+        return res.status(200).json({
+          status: true,
+          message: `${action} successful`,
+          data
+        });
+      }
+    );
+
+  } catch (error) {
+    console.error('API Error:', error);
+    return res.status(500).json({
+      status: false,
+      message: 'Something went wrong'
+    });
+  }
+};

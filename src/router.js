@@ -22,15 +22,18 @@ router.post('/getBranchFloors',auth.getBranchFloors);
 router.post('/getBranchRoomTypes',auth.getBranchRoomTypes);
 router.post('/getBranchRoomCapacity',auth.getBranchRoomCapacity);
 router.post('/getAvailbleBeds',auth.getAvailbleBeds);
+router.post('/getAvailbleRooms',auth.getAvailbleRooms);
 router.post('/getDashboard',auth.getDashboard);
+router.post('/getUserRoles',auth.getUserRoles);
 router.post('/getOccupantDues',auth.getOccupantDues);
 router.post('/getNextSevenDaysDues',auth.getNextSevenDaysDues);
+router.post('/expenses', auth.manageExpenses);
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'src/assets/img');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, file.originalname); // save original file name
   }
 });
 
