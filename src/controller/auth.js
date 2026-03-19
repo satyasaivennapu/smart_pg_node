@@ -1070,7 +1070,11 @@ export async function getUserRoles(req, res) {
 
 
 export async function manageExpenses(req, res) {
+
+  console.log("manageExpenses API called");
+
   try {
+
     const {
       action,
       id,
@@ -1081,12 +1085,12 @@ export async function manageExpenses(req, res) {
       paid_date
     } = req.body;
 
-    const userId = req.user?.id || req.body.user_id; // adjust as per auth
+    const userId = req.user?.id || req.body.user_id;
 
     if (!action) {
       return res.status(400).json({
-        status: false,
-        message: 'Action is required'
+        success: false,
+        message: "Action is required"
       });
     }
 
@@ -1101,42 +1105,37 @@ export async function manageExpenses(req, res) {
       userId || null
     ];
 
-    console.log("sp_manage_expenses req.body:", req.body);
-    db.query(
-      'CALL sp_manage_expenses(?,?,?,?,?,?,?,?)',
-      params,
-      (err, result) => {
-        if (err) {
-          console.error('DB Error:', err);
-          return res.status(500).json({
-            status: false,
-            message: 'Database error',
-            error: err.message
-          });
-        }
+    console.log("Request body:", req.body);
 
-        /* MySQL returns result sets differently for CALL */
-        let data = [];
-
-        if (action === 'GET') {
-          data = result[0];
-        } else {
-          data = result[0][0];
-        }
-
-        return res.status(200).json({
-          status: true,
-          message: `${action} successful`,
-          data
-        });
-      }
+    const [rows] = await db.query(
+      `CALL sp_manage_expenses(?,?,?,?,?,?,?,?)`,
+      params
     );
 
-  } catch (error) {
-    console.error('API Error:', error);
-    return res.status(500).json({
-      status: false,
-      message: 'Something went wrong'
+    console.log("Stored Procedure Result:", rows);
+
+    const result = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result
     });
+
+  } catch (err) {
+
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+
   }
 };

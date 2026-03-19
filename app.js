@@ -27,6 +27,6 @@ app.use(express.json());
 app.use('/api', router);
 
 /* Start server */
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(3000, '0.0.0.0', () => {
+  console.log('Server running on port 3000');
 });
