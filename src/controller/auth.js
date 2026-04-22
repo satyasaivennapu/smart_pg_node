@@ -477,18 +477,18 @@ export async function createBranchRooms(req, res) {
 
 export async function getPaymentReceipt(req, res) {
   try {
-    const { paymentId } = req.body;
+    const { invoice_number } = req.body;
 
-    if (!paymentId) {
+    if (!invoice_number) {
       return res.status(400).json({
         success: false,
-        message: "paymentId is required"
+        message: "invoice_number is required"
       });
     }
 
     const [rows] = await db.query(
       `CALL smart_pg.sp_pg_payment_receipt(?)`,
-      [paymentId]
+      [invoice_number]
     );
 
     const result = rows?.[0]?.[0] || null;
