@@ -330,24 +330,32 @@ export async function processPgCheckOut(req, res) {
     const {
       bookingId,
       checkOutDate,
-      userId
+      userId,
+      paymentMode,
+      refundAmount
     } = req.body;
 
     console.log("processPgCheckOut req.body:", req.body);
 
-    if (!bookingId || !checkOutDate || !userId) {
+    if (!bookingId || !checkOutDate || !userId || !paymentMode || !refundAmount) {
       return res.status(400).json({
         success: false,
-        message: "bookingId, checkOutDate and userId are required"
+        message: "bookingId, checkOutDate, paymentMode, refundAmount and userId are required"
       });
     }
 
     const [rows] = await db.query(
+<<<<<<< HEAD
       `CALL bank.sp_pg_vacate(?,?,?)`,
+=======
+      `CALL smart_pg.sp_pg_vacate(?,?,?,?,?)`,
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
       [
         bookingId,      // p_booking_id
         checkOutDate,   // p_checkout_date
-        userId          // p_updated_by
+        userId,         // p_updated_by
+        paymentMode,
+        refundAmount
       ]
     );
 
@@ -515,11 +523,13 @@ export async function getPaymentReceipt(req, res) {
 }
 export async function getCheckoutReport(req, res) {
   try {
-    const {
+    let {
       tenantId,
       branchId,
       fromDate,
-      toDate
+      toDate,
+      name,
+      roomNo
     } = req.body;
 
     if (!tenantId || !branchId || !fromDate || !toDate) {
@@ -529,13 +539,22 @@ export async function getCheckoutReport(req, res) {
       });
     }
 
+    if (name == null || name == "" || name == undefined) name = null
+    if (roomNo == null || roomNo == "" || roomNo == undefined) roomNo = null
+
     const [rows] = await db.query(
+<<<<<<< HEAD
       `CALL bank.sp_pg_checkout_report(?,?,?,?)`,
+=======
+      `CALL smart_pg.sp_pg_checkout_report(?,?,?,?,?,?)`,
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
       [
         tenantId,
         branchId,
         fromDate,
-        toDate
+        toDate,
+        name,
+        roomNo
       ]
     );
 
@@ -557,11 +576,13 @@ export async function getCheckoutReport(req, res) {
 }
 export async function getCheckinReport(req, res) {
   try {
-    const {
+    let {
       tenantId,
       branchId,
       fromDate,
-      toDate
+      toDate,
+      name,
+      roomNo
     } = req.body;
 
     if (!tenantId || !branchId || !fromDate || !toDate) {
@@ -571,13 +592,71 @@ export async function getCheckinReport(req, res) {
       });
     }
 
+    if (name == null || name == "" || name == undefined) name = null
+    if (roomNo == null || roomNo == "" || roomNo == undefined) roomNo = null
+
     const [rows] = await db.query(
+<<<<<<< HEAD
       `CALL bank.sp_pg_checkin_report(?,?,?,?)`,
+=======
+      `CALL smart_pg.sp_pg_checkin_report(?,?,?,?,?,?)`,
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
       [
         tenantId,
         branchId,
         fromDate,
-        toDate
+        toDate,
+        name,
+        roomNo
+      ]
+    );
+
+    const result = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+    console.error("DB Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+  }
+}
+
+export async function getTransactions(req, res) {
+  try {
+    let {
+      tenantId,
+      branchId,
+      fromDate,
+      toDate,
+      name,
+      roomNo
+    } = req.body;
+
+    if (!tenantId || !branchId || !fromDate || !toDate) {
+      return res.status(400).json({
+        success: false,
+        message: "tenantId, branchId, fromDate and toDate are required"
+      });
+    }
+    if (name == null || name == "" || name == undefined) name = null
+    if (roomNo == null || roomNo == "" || roomNo == undefined) roomNo = null
+
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_pg_transactions(?,?,?,?,?,?)`,
+      [
+        tenantId,
+        branchId,
+        fromDate,
+        toDate,
+        name,
+        roomNo
       ]
     );
 
@@ -611,7 +690,7 @@ export async function getPaymentHistory(req, res) {
         message: "tenantId and branchId are required"
       });
     }
-
+    console.log("Request body:", req.body);
     const [rows] = await db.query(
       `CALL bank.sp_pg_payment_history(?,?,?)`,
       [
@@ -693,7 +772,7 @@ export async function getBranchRoomTypes(req, res) {
       userId
     } = req.body;
 
-    console.log("sp_get_floors_by_branch req.body:", req.body);
+    console.log("sp_get_room_types_by_branch req.body:", req.body);
 
     if (!branchId || !userId) {
       return res.status(400).json({
@@ -911,6 +990,10 @@ export async function getDashboard(req, res) {
     const roomsInfo = rows?.[1] || {};
     const financeSummary = rows?.[2]?.[0] || {};
     const expenseSummary = rows?.[3]?.[0] || {};
+<<<<<<< HEAD
+=======
+    const roomBasedSummary = rows?.[4] || {};
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
     const paidToday = Number(financeSummary.paid_today || 0);
     const expectedToday = Number(financeSummary.expected_today || 0);
     const paidDueToday = Number(financeSummary.paid_due_today || 0);
@@ -924,6 +1007,10 @@ export async function getDashboard(req, res) {
       dashboard: {
         rooms: roomSummary,
         roomsInfo: roomsInfo,
+<<<<<<< HEAD
+=======
+        roomBasedSummary: roomBasedSummary,
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
         finance: {
           paid_today: paidToday,
           expected_today: expectedToday,
@@ -1145,6 +1232,7 @@ export async function manageExpenses(req, res) {
 
   }
 };
+<<<<<<< HEAD
 export async function manageCollections(req, res) {
 
   console.log("manageQrCollectionPayload API called");
@@ -1198,6 +1286,42 @@ export async function manageCollections(req, res) {
 
     console.log("Stored Procedure Result:", rows);
 
+=======
+export async function updateBedStatus(req, res) {
+  try {
+    const {
+      roomId = null,
+      roomDetailId,
+      userId = null,
+      reason,
+      bedStatus
+    } = req.body;
+
+    if (!roomId && !roomDetailId) {
+      return res.status(400).json({
+        success: false,
+        message: "roomId or roomDetailId is required"
+      });
+    }
+    if (!userId || !reason || !bedStatus) {
+      return res.status(400).json({
+        success: false,
+        message: "userId and reason and bedStatus are required"
+      });
+    }
+    console.log("Request body:", req.body);
+    const [rows] = await db.query(
+      `CALL smart_pg.sp_process_room_or_bed_status(?,?,?,?,?)`,
+      [
+        roomId,
+        roomDetailId,
+        userId,
+        reason,
+        bedStatus
+      ]
+    );
+
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
     const result = rows?.[0] || [];
 
     return res.json({
@@ -1206,6 +1330,7 @@ export async function manageCollections(req, res) {
     });
 
   } catch (err) {
+<<<<<<< HEAD
 
     console.error("DB Error:", err);
 
@@ -1216,10 +1341,19 @@ export async function manageCollections(req, res) {
       });
     }
 
+=======
+    console.error("DB Error:", err);
+
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
     return res.status(500).json({
       success: false,
       message: err.sqlMessage || err.message
     });
+<<<<<<< HEAD
 
   }
 }
+=======
+  }
+}
+>>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b

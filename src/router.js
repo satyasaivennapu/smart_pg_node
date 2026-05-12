@@ -13,6 +13,7 @@ router.post('/branch', auth.branch);
 router.post('/getPaymentReceipt', auth.getPaymentReceipt);
 router.post('/getCheckoutReport', auth.getCheckoutReport);
 router.post('/getCheckinReport', auth.getCheckinReport);
+router.post('/getTransactions', auth.getTransactions);
 router.post('/getPaymentHistory', auth.getPaymentHistory);
 router.post('/addMonthlyPayment', auth.addMonthlyPayment);
 router.post('/createBranchRooms', auth.createBranchRooms);
@@ -28,7 +29,7 @@ router.post('/getUserRoles', auth.getUserRoles);
 router.post('/getOccupantDues', auth.getOccupantDues);
 router.post('/getNextSevenDaysDues', auth.getNextSevenDaysDues);
 router.post('/expenses', auth.manageExpenses);
-router.post('/collections', auth.manageCollections);
+router.post('/updateBedStatus', auth.updateBedStatus);
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'src/assets/img');
