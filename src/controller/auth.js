@@ -7,7 +7,7 @@ export async function authenticate(req, res) {
       password
     } = req.body;
 
-    if (!userName || !password ) {
+    if (!userName || !password) {
       return res.status(400).json({
         success: false,
         message: "user Name, password are required"
@@ -15,7 +15,7 @@ export async function authenticate(req, res) {
     }
 
     const [rows] = await db.query(
-      'CALL smart_pg.sp_user_login(?,?)',
+      'CALL bank.sp_user_login(?,?)',
       [userName, password]
     );
 
@@ -50,7 +50,11 @@ export async function users(req, res) {
     const {
       id = null,
       crudType,
-      name = null,
+      firstName = null,
+      lastName = null,
+      surName = null,
+      department = null,
+      username = null,
       mobileNo = null,
       email = null,
       password = null,
@@ -73,7 +77,11 @@ export async function users(req, res) {
     const params = [
       crudType,     // p_action
       id,           // p_id
-      name,         // p_name
+      firstName,         // p_name
+      lastName,         // p_name
+      surName,
+      username,         // p_name
+      department,         // p_name
       mobileNo,     // p_phone_no
       email,        // p_email
       password,     // p_password (hashed)
@@ -85,7 +93,7 @@ export async function users(req, res) {
     ];
 
     const [rows] = await db.query(
-      'CALL smart_pg.sp_process_user(?,?,?,?,?,?,?,?,?,?,?)',
+      'CALL bank.sp_process_user(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       params
     );
 
@@ -145,7 +153,7 @@ export async function tenants(req, res) {
     ];
 
     const [rows] = await db.query(
-      'CALL smart_pg.sp_process_tenant(?,?,?,?,?,?,?,?,?,?)',
+      'CALL bank.sp_process_tenant(?,?,?,?,?,?,?,?,?,?)',
       params
     );
 
@@ -175,7 +183,6 @@ export async function branch(req, res) {
       name = null,
       code = null,
       tenantId = null,
-      noOfFloors = null,
       agreementFrom = null,
       agreementTo = null,
       isActive = null,
@@ -197,7 +204,6 @@ export async function branch(req, res) {
       name,            // p_name
       code,            // p_code
       tenantId,        // p_tenant_id
-      noOfFloors,      // p_no_of_floors
       agreementFrom,   // p_agreement_from
       agreementTo,     // p_agreement_to
       isActive,        // p_is_active
@@ -205,7 +211,7 @@ export async function branch(req, res) {
     ];
 
     const [rows] = await db.query(
-      'CALL smart_pg.sp_process_branch(?,?,?,?,?,?,?,?,?,?)',
+      'CALL bank.sp_process_branch(?,?,?,?,?,?,?,?,?)',
       params
     );
 
@@ -271,7 +277,7 @@ export async function processCheckIn(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_checkin(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `CALL bank.sp_pg_checkin(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         tenantId,              // p_tenant_id
         branchId,              // p_branch_id
@@ -289,7 +295,7 @@ export async function processCheckIn(req, res) {
         refundAmount || 0,     // p_refund_amount
         monthlyAmount,         // p_monthly_amount
         paymentMode || 'CASH', // p_payment_mode
-        userId     ,            // p_created_by
+        userId,            // p_created_by
         refundEligible || 0
       ]
     );
@@ -337,7 +343,7 @@ export async function processPgCheckOut(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_vacate(?,?,?)`,
+      `CALL bank.sp_pg_vacate(?,?,?)`,
       [
         bookingId,      // p_booking_id
         checkOutDate,   // p_checkout_date
@@ -388,7 +394,7 @@ export async function addMonthlyPayment(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_add_monthly_payment(?,?,?,?)`,
+      `CALL bank.sp_pg_add_monthly_payment(?,?,?,?)`,
       [
         bookingId,          // p_booking_id
         monthlyAmount,      // p_monthly_amount
@@ -441,7 +447,7 @@ export async function createBranchRooms(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_create_branch_rooms(?,?,?,?,?)`,
+      `CALL bank.sp_create_branch_rooms(?,?,?,?,?)`,
       [
         tenantId,                     // p_tenant_id
         branchId,                     // p_branch_id
@@ -487,7 +493,7 @@ export async function getPaymentReceipt(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_payment_receipt(?)`,
+      `CALL bank.sp_pg_payment_receipt(?)`,
       [invoice_number]
     );
 
@@ -524,7 +530,7 @@ export async function getCheckoutReport(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_checkout_report(?,?,?,?)`,
+      `CALL bank.sp_pg_checkout_report(?,?,?,?)`,
       [
         tenantId,
         branchId,
@@ -566,7 +572,7 @@ export async function getCheckinReport(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_checkin_report(?,?,?,?)`,
+      `CALL bank.sp_pg_checkin_report(?,?,?,?)`,
       [
         tenantId,
         branchId,
@@ -607,7 +613,7 @@ export async function getPaymentHistory(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_payment_history(?,?,?)`,
+      `CALL bank.sp_pg_payment_history(?,?,?)`,
       [
         tenantId,
         branchId,
@@ -649,7 +655,7 @@ export async function getBranchFloors(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_get_floors_by_branch(?,?)`,
+      `CALL bank.sp_get_floors_by_branch(?,?)`,
       [
         branchId,      // p_booking_id
         userId          // p_updated_by
@@ -697,7 +703,7 @@ export async function getBranchRoomTypes(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_get_room_types_by_branch(?,?,?)`,
+      `CALL bank.sp_get_room_types_by_branch(?,?,?)`,
       [
         branchId,      // p_booking_id
         floorNo,
@@ -746,7 +752,7 @@ export async function getBranchRoomCapacity(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_get_room_capacity_by_branch(?,?,?)`,
+      `CALL bank.sp_get_room_capacity_by_branch(?,?,?)`,
       [
         branchId,      // p_booking_id
         floorNo,
@@ -787,7 +793,7 @@ export async function getAvailbleBeds(req, res) {
 
     console.log("sp_get_available_beds_by_room_id req.body:", req.body);
 
-    if (!branchId || !roomId|| !userId) {
+    if (!branchId || !roomId || !userId) {
       return res.status(400).json({
         success: false,
         message: "branchId,roomId  and userId are required"
@@ -795,11 +801,11 @@ export async function getAvailbleBeds(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_get_available_beds_by_room_id(?,?,?)`,
+      `CALL bank.sp_get_available_beds_by_room_id(?,?,?)`,
       [
         branchId,      // p_booking_id
         roomId,
-      userId         // p_updated_by
+        userId         // p_updated_by
       ]
     );
 
@@ -838,7 +844,7 @@ export async function getAvailbleRooms(req, res) {
 
     console.log("sp_get_room_no req.body:", req.body);
 
-    if (!branchId || !floorNo|| !roomType|| !roomCapacity|| !userId) {
+    if (!branchId || !floorNo || !roomType || !roomCapacity || !userId) {
       return res.status(400).json({
         success: false,
         message: "branchId,floorNo,roomType ,roomCapacity and userId are required"
@@ -846,13 +852,13 @@ export async function getAvailbleRooms(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_get_room_no(?,?,?,?,?)`,
+      `CALL bank.sp_get_room_no(?,?,?,?,?)`,
       [
         branchId,      // p_booking_id
-      floorNo,
-      roomType,
-      roomCapacity,
-      userId         // p_updated_by
+        floorNo,
+        roomType,
+        roomCapacity,
+        userId         // p_updated_by
       ]
     );
 
@@ -892,7 +898,7 @@ export async function getDashboard(req, res) {
     console.log("sp_pg_dashboard_totals req.body:", req.body);
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_dashboard_totals(?, ?)`,
+      `CALL bank.sp_pg_dashboard_totals(?, ?)`,
       [tenantId, branchId]
     );
 
@@ -904,7 +910,7 @@ export async function getDashboard(req, res) {
     const roomSummary = rows?.[0] || {};
     const roomsInfo = rows?.[1] || {};
     const financeSummary = rows?.[2]?.[0] || {};
-   const expenseSummary=rows?.[3]?.[0] || {};
+    const expenseSummary = rows?.[3]?.[0] || {};
     const paidToday = Number(financeSummary.paid_today || 0);
     const expectedToday = Number(financeSummary.expected_today || 0);
     const paidDueToday = Number(financeSummary.paid_due_today || 0);
@@ -912,20 +918,20 @@ export async function getDashboard(req, res) {
     const refundAmountToday = Number(financeSummary.refund_amount || 0);
 
     const pendingToday = Math.max(expectedToday - paidDueToday, 0);
-    const todayExpenses=Number(expenseSummary.today_expenses || 0);
+    const todayExpenses = Number(expenseSummary.today_expenses || 0);
     return res.json({
       success: true,
       dashboard: {
         rooms: roomSummary,
-        roomsInfo:roomsInfo,
+        roomsInfo: roomsInfo,
         finance: {
           paid_today: paidToday,
           expected_today: expectedToday,
           paid_due_today: paidDueToday,
           pending_today: pendingToday,
-          deposit_amount_today:depositAmountToday,
-          refund_amount_today:refundAmountToday,
-          today_expenses:todayExpenses
+          deposit_amount_today: depositAmountToday,
+          refund_amount_today: refundAmountToday,
+          today_expenses: todayExpenses
         }
       }
     });
@@ -957,7 +963,7 @@ export async function getOccupantDues(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_user_pending_today(?,?)`,
+      `CALL bank.sp_pg_user_pending_today(?,?)`,
       [
         tenantId,
         branchId       // p_updated_by
@@ -1004,7 +1010,7 @@ export async function getNextSevenDaysDues(req, res) {
     }
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_pg_next_7_days_pending(?,?)`,
+      `CALL bank.sp_pg_next_7_days_pending(?,?)`,
       [
         tenantId,
         branchId       // p_updated_by
@@ -1041,7 +1047,7 @@ export async function getUserRoles(req, res) {
     console.log("sp_get_user_roles req.body:", req.body);
 
     const [rows] = await db.query(
-      `CALL smart_pg.sp_get_user_roles()`
+      `CALL bank.sp_get_user_roles()`
     );
 
     const result = rows?.[0] || {};
@@ -1139,3 +1145,81 @@ export async function manageExpenses(req, res) {
 
   }
 };
+export async function manageCollections(req, res) {
+
+  console.log("manageQrCollectionPayload API called");
+
+  try {
+
+    const {
+      action,
+      id,
+      branch_name,
+      branch_code,
+      loan_type,
+      borrower_name,
+      area_name,
+      transaction_number,
+      amount,
+      payment_type,
+      remarks,
+    } = req.body;
+
+    const userId = req.user?.id || req.body.user_id;
+
+    if (!action) {
+      return res.status(400).json({
+        success: false,
+        message: "Action is required"
+      });
+    }
+
+    const params = [
+      action,
+      id || null,
+      branch_name || null,
+      branch_code || null,
+      loan_type || null,
+      borrower_name || null,
+      area_name || null,
+      transaction_number || null,
+      amount || null,
+      payment_type || null,
+      remarks || null,
+      userId || null
+    ];
+
+    console.log("Request body:", req.body);
+
+    const [rows] = await db.query(
+      `CALL sp_process_collections(?,?,?,?,?,?,?,?,?,?,?,?)`,
+      params
+    );
+
+    console.log("Stored Procedure Result:", rows);
+
+    const result = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+
+  }
+}

@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo "Installing dependencies..."
+      - npm install
+  build:
+    commands:
+      - echo "Building SAM application..."
+      - sam build
+  post_build:
+    commands:
+      - echo "Packaging SAM application..."
+      # You can provide S3 bucket through environment variables in CodeBuild or uncomment and set it here
+      # - sam package --s3-bucket YOUR_S3_BUCKET_NAME --output-template-file packaged.yaml
+      - echo "Build completed."
+
+artifacts:
+  files:
+    - template.yaml
+    - .aws-sam/build/**/*
+  # If packaging, you'll export packaged.yaml instead
+  # - packaged.yaml

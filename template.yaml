@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  bank_node
+  
+  Sample SAM Template for bank_node API
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+
+Resources:
+  BankApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: lambda.handler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+        Root:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+
+Outputs:
+  BankApiFunctionApi:
+    Description: "API Gateway endpoint URL for Prod stage for Bank API function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  BankApiFunction:
+    Description: "Bank API Lambda Function ARN"
+    Value: !GetAtt BankApiFunction.Arn
+  BankApiFunctionIamRole:
+    Description: "Implicit IAM Role created for Bank API function"
+    Value: !GetAtt BankApiFunctionRole.Arn

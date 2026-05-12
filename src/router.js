@@ -1,33 +1,34 @@
 import express from 'express';
-const router=express.Router();
+const router = express.Router();
 import * as auth from './controller/auth.js';
-import  multer from 'multer';
+import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
 
-router.post('/authenticate',auth.authenticate);
-router.post('/users',auth.users);
-router.post('/tenants',auth.tenants);
-router.post('/branch',auth.branch);
-router.post('/getPaymentReceipt',auth.getPaymentReceipt);
-router.post('/getCheckoutReport',auth.getCheckoutReport);
-router.post('/getCheckinReport',auth.getCheckinReport);
-router.post('/getPaymentHistory',auth.getPaymentHistory);
-router.post('/addMonthlyPayment',auth.addMonthlyPayment);
-router.post('/createBranchRooms',auth.createBranchRooms);
-router.post('/processCheckIn',auth.processCheckIn);
-router.post('/processCheckOut',auth.processPgCheckOut);
-router.post('/getBranchFloors',auth.getBranchFloors);
-router.post('/getBranchRoomTypes',auth.getBranchRoomTypes);
-router.post('/getBranchRoomCapacity',auth.getBranchRoomCapacity);
-router.post('/getAvailbleBeds',auth.getAvailbleBeds);
-router.post('/getAvailbleRooms',auth.getAvailbleRooms);
-router.post('/getDashboard',auth.getDashboard);
-router.post('/getUserRoles',auth.getUserRoles);
-router.post('/getOccupantDues',auth.getOccupantDues);
-router.post('/getNextSevenDaysDues',auth.getNextSevenDaysDues);
+router.post('/authenticate', auth.authenticate);
+router.post('/users', auth.users);
+router.post('/tenants', auth.tenants);
+router.post('/branch', auth.branch);
+router.post('/getPaymentReceipt', auth.getPaymentReceipt);
+router.post('/getCheckoutReport', auth.getCheckoutReport);
+router.post('/getCheckinReport', auth.getCheckinReport);
+router.post('/getPaymentHistory', auth.getPaymentHistory);
+router.post('/addMonthlyPayment', auth.addMonthlyPayment);
+router.post('/createBranchRooms', auth.createBranchRooms);
+router.post('/processCheckIn', auth.processCheckIn);
+router.post('/processCheckOut', auth.processPgCheckOut);
+router.post('/getBranchFloors', auth.getBranchFloors);
+router.post('/getBranchRoomTypes', auth.getBranchRoomTypes);
+router.post('/getBranchRoomCapacity', auth.getBranchRoomCapacity);
+router.post('/getAvailbleBeds', auth.getAvailbleBeds);
+router.post('/getAvailbleRooms', auth.getAvailbleRooms);
+router.post('/getDashboard', auth.getDashboard);
+router.post('/getUserRoles', auth.getUserRoles);
+router.post('/getOccupantDues', auth.getOccupantDues);
+router.post('/getNextSevenDaysDues', auth.getNextSevenDaysDues);
 router.post('/expenses', auth.manageExpenses);
+router.post('/collections', auth.manageCollections);
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'src/assets/img');
@@ -46,12 +47,9 @@ router.post('/upload', upload.single('image'), (req, res) => {
   });
 });
 
-
-
 router.get('/getUploadFile/:filename', (req, res) => {
   const { filename } = req.params;
 
-  // ❌ Prevent directory traversal
   if (filename.includes('..')) {
     return res.status(400).json({
       status: false,
