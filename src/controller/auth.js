@@ -345,11 +345,7 @@ export async function processPgCheckOut(req, res) {
     }
 
     const [rows] = await db.query(
-<<<<<<< HEAD
-      `CALL bank.sp_pg_vacate(?,?,?)`,
-=======
       `CALL smart_pg.sp_pg_vacate(?,?,?,?,?)`,
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
       [
         bookingId,      // p_booking_id
         checkOutDate,   // p_checkout_date
@@ -543,11 +539,7 @@ export async function getCheckoutReport(req, res) {
     if (roomNo == null || roomNo == "" || roomNo == undefined) roomNo = null
 
     const [rows] = await db.query(
-<<<<<<< HEAD
-      `CALL bank.sp_pg_checkout_report(?,?,?,?)`,
-=======
       `CALL smart_pg.sp_pg_checkout_report(?,?,?,?,?,?)`,
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
       [
         tenantId,
         branchId,
@@ -596,11 +588,7 @@ export async function getCheckinReport(req, res) {
     if (roomNo == null || roomNo == "" || roomNo == undefined) roomNo = null
 
     const [rows] = await db.query(
-<<<<<<< HEAD
-      `CALL bank.sp_pg_checkin_report(?,?,?,?)`,
-=======
       `CALL smart_pg.sp_pg_checkin_report(?,?,?,?,?,?)`,
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
       [
         tenantId,
         branchId,
@@ -990,10 +978,7 @@ export async function getDashboard(req, res) {
     const roomsInfo = rows?.[1] || {};
     const financeSummary = rows?.[2]?.[0] || {};
     const expenseSummary = rows?.[3]?.[0] || {};
-<<<<<<< HEAD
-=======
     const roomBasedSummary = rows?.[4] || {};
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
     const paidToday = Number(financeSummary.paid_today || 0);
     const expectedToday = Number(financeSummary.expected_today || 0);
     const paidDueToday = Number(financeSummary.paid_due_today || 0);
@@ -1007,10 +992,7 @@ export async function getDashboard(req, res) {
       dashboard: {
         rooms: roomSummary,
         roomsInfo: roomsInfo,
-<<<<<<< HEAD
-=======
         roomBasedSummary: roomBasedSummary,
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
         finance: {
           paid_today: paidToday,
           expected_today: expectedToday,
@@ -1232,7 +1214,7 @@ export async function manageExpenses(req, res) {
 
   }
 };
-<<<<<<< HEAD
+
 export async function manageCollections(req, res) {
 
   console.log("manageQrCollectionPayload API called");
@@ -1286,7 +1268,32 @@ export async function manageCollections(req, res) {
 
     console.log("Stored Procedure Result:", rows);
 
-=======
+    const result = rows?.[0] || [];
+
+    return res.json({
+      success: true,
+      result
+    });
+
+  } catch (err) {
+
+    console.error("DB Error:", err);
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION') {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message
+    });
+
+  }
+};
+
 export async function updateBedStatus(req, res) {
   try {
     const {
@@ -1320,8 +1327,6 @@ export async function updateBedStatus(req, res) {
         bedStatus
       ]
     );
-
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
     const result = rows?.[0] || [];
 
     return res.json({
@@ -1330,30 +1335,11 @@ export async function updateBedStatus(req, res) {
     });
 
   } catch (err) {
-<<<<<<< HEAD
-
     console.error("DB Error:", err);
 
-    if (err.code === 'ER_SIGNAL_EXCEPTION') {
-      return res.status(400).json({
-        success: false,
-        message: err.message
-      });
-    }
-
-=======
-    console.error("DB Error:", err);
-
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
     return res.status(500).json({
       success: false,
       message: err.sqlMessage || err.message
     });
-<<<<<<< HEAD
-
   }
 }
-=======
-  }
-}
->>>>>>> d0fd0d03d5de5ba374b253660bc39aaf18ae5a0b
